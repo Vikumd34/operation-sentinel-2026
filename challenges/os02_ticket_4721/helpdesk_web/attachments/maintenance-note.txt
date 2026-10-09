@@ -1,0 +1,13 @@
+SENTINEL ENTERPRISE OPERATIONS CENTRE
+Maintenance Record
+
+Incident Reference: INC-4721
+Requester: R. Perera
+
+Approved maintenance window: 23:30-00:15
+Temporary maintenance account: ops_readonly
+
+Review Status: Complete
+Stage Verification: FLAG{SENTINEL_TICKET4721_REVIEWED}
+
+Reminder: Never place production passwords in support tickets.

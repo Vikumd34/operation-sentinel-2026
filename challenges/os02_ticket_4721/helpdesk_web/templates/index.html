@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sentinel Helpdesk</title>
+</head>
+<body>
+
+    <h1>Sentinel Helpdesk</h1>
+
+    <p>Internal Incident Management Portal</p>
+
+    <h2>Incident Search</h2>
+
+    <form method="GET" action="/">
+        <label for="incident">Incident Reference:</label>
+        <input
+            type="text"
+            id="incident"
+            name="incident"
+            placeholder="INC-XXXX"
+        >
+        <button type="submit">Search</button>
+    </form>
+
+    {% if ticket %}
+    <hr>
+
+    <h2>Incident {{ ticket.reference }}</h2>
+
+    <p><strong>Requester:</strong> {{ ticket.requester }}</p>
+    <p><strong>Category:</strong> {{ ticket.category }}</p>
+    <p><strong>Status:</strong> {{ ticket.status }}</p>
+
+    <h3>Attachment</h3>
+    <p>
+    <a href="/attachments/{{ ticket.attachment }}">
+        {{ ticket.attachment }}
+    </a>
+</p>
+
+{% elif error %}
+    <p>{{ error }}</p>
+{% endif %}
+
+<hr>
+
+<h2>CTF Flag Submission</h2>
+
+<p>Enter the flag you discovered from Ticket 4721.</p>
+
+<form method="POST" action="/submit-flag">
+
+    <label for="flag">Flag:</label>
+
+    <input
+        type="text"
+        id="flag"
+        name="flag"
+        placeholder="FLAG{...}"
+        required
+    >
+
+    <button type="submit">Submit Flag</button>
+
+</form>
+
+</body>
+</html>

@@ -1,0 +1,24 @@
+# Python virtual environments
+.venv/
+venv/
+
+# Python generated files
+__pycache__/
+*.pyc
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Private organizer flags
+organizer/flags/
+
+# Temporary files
+*.log
+*.tmp
+
+# Editor and operating system files
+.vscode/
+.DS_Store
+Thumbs.db
