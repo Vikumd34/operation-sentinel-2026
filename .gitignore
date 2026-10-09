@@ -22,3 +22,11 @@ organizer/flags/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# SQLite databases and player progress
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
