@@ -1,0 +1,9 @@
+﻿timestamp,event_id,account,source_ip,destination,action,status
+2026-09-26 22:41:12,4624,noc_operator,10.10.20.12,monitoring-console,LOGIN,SUCCESS
+2026-09-26 23:31:08,4624,ops_readonly,10.10.20.47,monitoring-console,LOGIN,SUCCESS
+2026-09-26 23:36:21,4663,ops_readonly,10.10.20.47,network-dashboard,READ,SUCCESS
+2026-09-26 23:42:19,4625,guest_support,10.10.20.81,monitoring-console,LOGIN,FAILED
+2026-09-26 23:47:03,4663,ops_readonly,10.10.20.47,backup-console,READ,SUCCESS
+2026-09-26 23:49:37,4634,ops_readonly,10.10.20.47,monitoring-console,LOGOUT,SUCCESS
+2026-09-27 00:06:14,4624,backupsvc,10.10.20.18,backup-console,LOGIN,SUCCESS
+2026-09-27 08:12:09,4624,noc_operator,10.10.20.12,monitoring-console,LOGIN,SUCCESS
