@@ -18,10 +18,23 @@ def get_db_connection():
 def get_player_id():
     if "player_id" not in session:
         session["player_id"] = secrets.token_hex(16)
-    return session["player_id"]
+
+    player_id = session["player_id"]
+
+    with get_db_connection() as connection:
+        connection.execute(
+            """
+            INSERT OR IGNORE INTO player_progress (player_id)
+            VALUES (?)
+            """,
+            (player_id,)
+        )
+
+    return player_id
 
 @app.route("/")
 def home():
+    get_player_id()
     incident = request.args.get("incident")
     ticket = None
     error = None
@@ -59,7 +72,37 @@ def use_hint(hint_number):
     if hint_number not in (1, 2, 3):
         return "Invalid hint", 400
 
-    used_hints = session.get("used_hints", [])
+    player_id = get_player_id()
+
+    penalties = {1: 0, 2: 5, 3: 10}
+
+    with get_db_connection() as connection:
+        connection.execute(
+            """
+            INSERT OR IGNORE INTO hint_usage (player_id, hint_number)
+            VALUES (?, ?)
+            """,
+            (player_id, hint_number)
+        )
+
+        used_hints = [
+            row[0]
+            for row in connection.execute(
+                "SELECT hint_number FROM hint_usage WHERE player_id = ?",
+                (player_id,)
+            ).fetchall()
+        ]
+
+        total_penalty = sum(penalties[hint] for hint in used_hints)
+
+        connection.execute(
+            """
+            UPDATE player_progress
+            SET total_penalty = ?
+            WHERE player_id = ?
+            """,
+            (total_penalty, player_id)
+        )
 
     if hint_number not in used_hints:
         used_hints.append(hint_number)
@@ -90,6 +133,18 @@ def submit_flag():
     expected_flag = flag_file.read_text(encoding="utf-8").strip()
 
     if submitted_flag == expected_flag:
+        player_id = get_player_id()
+
+        with get_db_connection() as connection:
+            connection.execute(
+            """
+            UPDATE player_progress
+            SET completed = 1
+            WHERE player_id = ?
+            """,
+            (player_id,)
+            )
+
         return "Correct flag! OS-02 completed."
 
     return "Incorrect flag."
