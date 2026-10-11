@@ -1,9 +1,48 @@
 const { test, before, after } = require('node:test'), assert = require('node:assert'), os = require('os'), path = require('path');
 process.env.DATA_FILE = path.join(os.tmpdir(), 'sent-' + process.pid + '.json'); process.env.ADMIN_TOKEN = 'test-admin';
+process.env.AUTH_RATE_LIMIT = '30';
 const server = require('../server'), FL = require('../organiser_only/flags.json');
 let base; before(() => new Promise(r => server.listen(0, '127.0.0.1', () => { base = 'http://127.0.0.1:' + server.address().port; r(); })));
 after(() => server.close());
-async function player() { let ck = ''; return async (p, o = {}) => { const r = await fetch(base + p, { ...o, headers: { cookie: ck, 'content-type': 'application/json', ...(o.headers || {}) }, body: o.body && JSON.stringify(o.body) }); const sc = r.headers.get('set-cookie'); if (sc) ck = sc.split(';')[0]; return [r.status, await r.json()]; }; }
+let playerCount = 0;
+
+async function player() {
+  let ck = '';
+
+  const q = async (p, o = {}) => {
+    const r = await fetch(base + p, {
+      ...o,
+      headers: {
+        cookie: ck,
+        'content-type': 'application/json',
+        ...(o.headers || {})
+      },
+      body: o.body && JSON.stringify(o.body)
+    });
+
+    const sc = r.headers.get('set-cookie');
+    if (sc) ck = sc.split(';')[0];
+
+    return [r.status, await r.json()];
+  };
+
+  const username = `test_${process.pid}_${++playerCount}`;
+  const password = 'SentinelTest2026!';
+
+  const [registerStatus] = await q('/api/register', {
+    method: 'POST',
+    body: { username, password }
+  });
+  assert.equal(registerStatus, 201, 'Test registration failed');
+
+  const [loginStatus] = await q('/api/login', {
+    method: 'POST',
+    body: { username, password }
+  });
+  assert.equal(loginStatus, 200, 'Test login failed');
+
+  return q;
+}
 const sub = (q, id, flag) => q('/api/submit', { method: 'POST', body: { id, flag } });
 test('only OS-01 open at start; locked stages leak no details', async () => { const q = await player(); const [, v] = await q('/api/challenges'); assert.deepEqual(v.challenges.map(c => c.status), ['open', 'locked', 'locked', 'locked', 'locked', 'locked']); assert.equal(v.challenges[3].objective, undefined); assert.ok(!JSON.stringify(v).includes('FLAG{')); });
 test('stage bypass is rejected', async () => { const q = await player(); await q('/api/challenges'); const [s] = await sub(q, 'OS-03', FL['OS-03']); assert.equal(s, 403); const [h] = await q('/api/hint', { method: 'POST', body: { id: 'OS-02', n: 1 } }); assert.equal(h, 403); });

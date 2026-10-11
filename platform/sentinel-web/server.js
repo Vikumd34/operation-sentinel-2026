@@ -10,6 +10,7 @@ const CH = JSON.parse(fs.readFileSync(path.join(ROOT, 'challenges.json'), 'utf8'
 const MAX = CH.reduce((a, c) => a + c.points, 0);
 let S = {}; try { S = JSON.parse(fs.readFileSync(DATA, 'utf8')); } catch {}
 const LOG = [], hits = new Map();
+const AUTH_RATE_LIMIT = Number(process.env.AUTH_RATE_LIMIT || 10);
 const save = () => { try { fs.writeFileSync(DATA, JSON.stringify(S)); } catch {} };
 const log = (e, d) => { LOG.push({ t: new Date().toISOString(), e, ...d }); if (LOG.length > 200) LOG.shift(); };
 const sha = s => crypto.createHash('sha256').update(String(s)).digest();
@@ -50,6 +51,10 @@ function sess(req, res) {
   return [sid, session];
 }
 
+function loggedIn(req) {
+  const m = /(?:^|; )sid=([a-f0-9]{32})/.exec(req.headers.cookie || '');
+  return !!(m && S[m[1]] && S[m[1]].user);
+}
 const idx = id => CH.findIndex(c => c.id === id);
 const unlocked = (p, i) => i === 0 || !!p.solved[CH[i - 1].id];
 function view(p) {
@@ -100,7 +105,11 @@ const server = http.createServer(async (req, res) => {
       const username = session && session.user ? session.user : null;
       return send(200, { loggedIn: !!username, username });
     }
-    if (req.method === 'GET' && p === '/api/challenges') { const [, s] = sess(req, res); return send(200, view(s)); }
+    if (req.method === 'GET' && p === '/api/challenges') {
+  if (!loggedIn(req)) return send(401, { error: 'Please log in first' });
+  const [, s] = sess(req, res);
+  return send(200, view(s));
+}
     if (req.method === 'GET' && p === '/api/admin/status') {
       if (!adminOk(req)) return send(403, { error: 'forbidden' });
       const ps = Object.values(S).filter(x => x && x.solved && x.hints && x.pen);
@@ -113,7 +122,7 @@ const server = http.createServer(async (req, res) => {
           Math.floor(Date.now() / 60000);
         hits.set(key, (hits.get(key) || 0) + 1);
         if (hits.size > 5000) hits.clear();
-        if (hits.get(key) > 10) {
+        if (hits.get(key) > AUTH_RATE_LIMIT) {
           return send(429, { error: 'Too many attempts. Try again in one minute.' });
         }
       }
@@ -156,6 +165,7 @@ const server = http.createServer(async (req, res) => {
         }
         save(); log('admin_reset', { id: b.id || 'ALL' }); return send(200, { ok: true });
       }
+      if (!loggedIn(req)) return send(401, { error: 'Please log in first' });
       const [sid, s] = sess(req, res);
       if (p === '/api/reset') { for (const key of Object.keys(s)) delete s[key]; Object.assign(s, blank()); save(); log('player_reset', { sid: sid.slice(0, 6) }); return send(200, view(s)); }
       const i = idx(b.id); if (i < 0) return send(400, { error: 'unknown stage' });
@@ -191,6 +201,24 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method !== 'GET') return send(405, { error: 'method' });
     const f = path.normalize(path.join(ROOT, 'public', p === '/' ? 'index.html' : p));
+    // Redirect the homepage to the correct page
+if (p === '/' || p === '/index.html') {
+  res.writeHead(302, {
+    Location: loggedIn(req) ? '/dashboard.html' : '/login.html'
+  });
+  return res.end();
+}
+
+// Protect the dashboard
+if (p === '/dashboard.html' && !loggedIn(req)) {
+  res.writeHead(302, { Location: '/login.html' });
+  return res.end();
+}
+
+if (!f.startsWith(path.join(ROOT, 'public') + path.sep)) {
+  res.writeHead(403);
+  return res.end();
+}
     if (!f.startsWith(path.join(ROOT, 'public') + path.sep)) { res.writeHead(403); return res.end(); }
     fs.readFile(f, (e, d) => { if (e) { res.writeHead(404); return res.end('Not found'); } res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream' }); res.end(d); });
   } catch (c) { send(typeof c === 'number' ? c : 500, { error: typeof c === 'number' ? 'bad request' : 'server error' }); }
