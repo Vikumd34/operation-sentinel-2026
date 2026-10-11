@@ -1,0 +1,17 @@
+.git
+.gitignore
+node_modules
+.venv
+__pycache__
+*.pyc
+
+data/
+data/**
+organiser_only/
+organiser_only/**
+.env
+.env.*
+*.log
+
+test/
+account-section.txt
