@@ -4,3 +4,5 @@ organiser_only/flags.json
 
 data/accounts.json
 *.backup
+
+/organiser_only/flags.json
