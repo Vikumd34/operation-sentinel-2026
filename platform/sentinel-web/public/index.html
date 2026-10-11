@@ -85,6 +85,25 @@ canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:9}
 <canvas id="bg" aria-hidden="true"></canvas><div id="glow"></div><canvas id="fx" aria-hidden="true"></canvas>
 <nav><b class="mono">SENTINEL//2026</b><a href="#lab">Stages</a><a href="#console">Console</a><a href="#colour">Colour Lab</a><span id="score" class="mono" aria-live="polite"></span></nav>
 <main>
+<section id="account">
+ <h2>Player Account</h2>
+ <p class="note">Register or log in to save your CTF progress.</p>
+ <div class="glass" style="max-width:480px">
+  <form id="authForm">
+   <label for="authUser">Username</label>
+   <input id="authUser" type="text" minlength="3" maxlength="24" autocomplete="username" required>
+   <label for="authPass">Password</label>
+   <input id="authPass" type="password" minlength="10" autocomplete="current-password" required>
+   <p class="flex">
+    <button class="btn" type="submit" id="loginBtn">LOGIN</button>
+    <button class="btn" type="button" id="registerBtn">REGISTER</button>
+   </p>
+  </form>
+  <p id="authMessage" class="note" aria-live="polite"></p>
+  <button class="btn" type="button" id="logoutBtn" style="display:none">LOGOUT</button>
+ </div>
+</section>
+
 <section class="hero" id="top">
  <div class="mono note">IE3132 PENETRATION TESTING · SLIIT BSc (Hons) IT · YEAR 3 SEM 1</div>
  <h1>OPERATION<br><span>SENTINEL</span> 2026</h1>
@@ -222,4 +241,71 @@ function submit(timeout){clearInterval(tick);const d=dist(rgb,tgt),acc=100*(1-d/
  $('#gs').textContent=`${timeout?'Time up. ':''}Accuracy ${acc.toFixed(1)}% (distance ${d.toFixed(1)}) · ${acc>=th?'MATCH! +'+pts:'below '+th+'% — '+(acc>75?'close':'try again')} · total ${tot}`;$('#tg').textContent='Target '+hex(tgt)}
 $('#go').onclick=()=>submit(false);$('#nx').onclick=()=>{$('#tg').textContent='Target';newRound()};newRound();sync();
 api('/api/challenges').then(v=>{V=v;sel=(v.challenges.find(c=>c.status==='open')||{}).id||null;render()}).catch(e=>{$('#grid').textContent='Backend unreachable: '+e.message});
+/* Player login and registration */
+const authForm = document.querySelector('#authForm');
+const authMessage = document.querySelector('#authMessage');
+const authUser = document.querySelector('#authUser');
+const authPass = document.querySelector('#authPass');
+
+async function playerAuth(mode) {
+  const username = authUser.value.trim();
+  const password = authPass.value;
+
+  authMessage.textContent = 'Please wait...';
+  authMessage.className = 'note';
+
+  try {
+    const result = await api('/api/' + mode, { username, password });
+
+    if (mode === 'register') {
+      authMessage.textContent = 'Account created! Please click LOGIN.';
+    } else {
+      authMessage.textContent = 'Logged in as ' + result.username;
+      authPass.value = '';
+      document.querySelector('#logoutBtn').style.display = 'inline-block';
+      V = await api('/api/challenges'); render();
+    }
+
+    authMessage.className = 'good';
+  } catch (err) {
+    authMessage.textContent = err.message;
+    authMessage.className = 'bad';
+  }
+}
+
+authForm.addEventListener('submit', event => {
+  event.preventDefault();
+  playerAuth('login');
+});
+
+document.querySelector('#registerBtn').addEventListener('click', () => {
+  if (authForm.reportValidity()) playerAuth('register');
+});
+/* Restore player login status after refresh */
+api('/api/me').then(state => {
+  if (state.loggedIn) {
+    authMessage.textContent = 'Logged in as ' + state.username;
+    authMessage.className = 'good';
+    document.querySelector('#logoutBtn').style.display = 'inline-block';
+  }
+}).catch(err => {
+  console.error('Could not check login status:', err);
+});
+/* Player logout */
+document.querySelector('#logoutBtn').addEventListener('click', async () => {
+  const message = document.querySelector('#authMessage');
+  try {
+    await api('/api/logout', {});
+    document.querySelector('#logoutBtn').style.display = 'none';
+    document.querySelector('#authForm').reset();
+    message.textContent = 'Logged out successfully.';
+    message.className = 'good';
+    V = await api('/api/challenges');
+    sel = null;
+    render();
+  } catch (err) {
+    message.textContent = err.message;
+    message.className = 'bad';
+  }
+});
 </script></body></html>

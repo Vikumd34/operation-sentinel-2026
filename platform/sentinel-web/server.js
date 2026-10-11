@@ -94,6 +94,12 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x'), p = url.pathname;
   try {
     if (req.method === 'GET' && p === '/api/health') return send(200, { ok: true, stages: CH.length, flagsLoaded: CH.every(c => FLAGS[c.id]) });
+    if (req.method === 'GET' && p === '/api/me') {
+      const match = /(?:^|; )sid=([a-f0-9]{32})/.exec(req.headers.cookie || '');
+      const session = match ? S[match[1]] : null;
+      const username = session && session.user ? session.user : null;
+      return send(200, { loggedIn: !!username, username });
+    }
     if (req.method === 'GET' && p === '/api/challenges') { const [, s] = sess(req, res); return send(200, view(s)); }
     if (req.method === 'GET' && p === '/api/admin/status') {
       if (!adminOk(req)) return send(403, { error: 'forbidden' });
@@ -112,6 +118,17 @@ const server = http.createServer(async (req, res) => {
         }
       }
 
+      if (p === '/api/logout') {
+        const match = /(?:^|; )sid=([a-f0-9]{32})/.exec(req.headers.cookie || '');
+        if (match && Object.hasOwn(S, match[1])) {
+          delete S[match[1]];
+          save();
+        }
+        const secure = req.socket.encrypted ? '; Secure' : '';
+        res.setHeader('Set-Cookie',
+          'sid=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0' + secure);
+        return send(200, { ok: true });
+      }
       if (p === '/api/login') {
         if (!auth.verify(b.username, b.password)) {
           return send(401, { error: 'Invalid username or password' });
@@ -140,7 +157,7 @@ const server = http.createServer(async (req, res) => {
         save(); log('admin_reset', { id: b.id || 'ALL' }); return send(200, { ok: true });
       }
       const [sid, s] = sess(req, res);
-      if (p === '/api/reset') { S[sid] = blank(); save(); log('player_reset', { sid: sid.slice(0, 6) }); return send(200, view(S[sid])); }
+      if (p === '/api/reset') { for (const key of Object.keys(s)) delete s[key]; Object.assign(s, blank()); save(); log('player_reset', { sid: sid.slice(0, 6) }); return send(200, view(s)); }
       const i = idx(b.id); if (i < 0) return send(400, { error: 'unknown stage' });
       if (!unlocked(s, i)) { log('bypass_attempt', { sid: sid.slice(0, 6), id: b.id }); return send(403, { error: 'stage locked' }); }
       if (p === '/api/hint') {
