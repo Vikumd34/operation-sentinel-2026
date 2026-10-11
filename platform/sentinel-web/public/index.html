@@ -82,8 +82,24 @@ canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:9}
 }
 
 </style></head><body>
+/* Show the CTF dashboard only after login */
+body:not(.logged-in) nav,
+body:not(.logged-in) #top,
+body:not(.logged-in) #lab,
+body:not(.logged-in) #console,
+body:not(.logged-in) #colour,
+body:not(.logged-in) #done {
+  display: none !important;
+}
+
+/* Hide the login page after successful login */
+body.logged-in #account {
+  display: none !important;
+}
 <canvas id="bg" aria-hidden="true"></canvas><div id="glow"></div><canvas id="fx" aria-hidden="true"></canvas>
-<nav><b class="mono">SENTINEL//2026</b><a href="#lab">Stages</a><a href="#console">Console</a><a href="#colour">Colour Lab</a><span id="score" class="mono" aria-live="polite"></span></nav>
+<nav><b class="mono">SENTINEL//2026</b><a href="#lab">Stages</a><a href="#console">Console</a><a href="#colour">Colour Lab</a><span id="score" class="mono" aria-live="polite"></span>
+<button class="btn" type="button" id="dashboardLogoutBtn">LOGOUT</button>
+</nav>
 <main>
 <section id="account">
  <h2>Player Account</h2>
@@ -179,6 +195,12 @@ function fb(node,m){node.title=m}
 function detail(c){const d=$('#det');if(!c||c.status==='locked'){d.textContent='';d.append(el('p','note','Select an unlocked stage above.'));return}
  d.textContent='';const row=(k,v)=>{const r=el('div','row');r.append(el('div','k',k),el('div',null,v));d.append(r)};
  d.append(el('h3',null,c.id+' — '+c.title));row('Domain · Difficulty · Points',c.domain+' · '+c.difficulty+' · '+c.points);row('Scenario',c.scenario);row('Objective',c.objective);row('Suggested tools',c.tools);row('Evidence / target',c.evidence);
+if(c.id==='OS-01'){
+  const a=el('a','btn','DOWNLOAD OS-01 SCREENSHOT');
+  a.href='/evidence/noc_ticket_4721.png';
+  a.download='noc_ticket_4721.png';
+  d.append(a);
+}
  d.append(el('div','k','Hints (cost deducted from this stage’s points)'));
 
  c.hints.forEach(h=>{
@@ -264,6 +286,8 @@ async function playerAuth(mode) {
       authPass.value = '';
       document.querySelector('#logoutBtn').style.display = 'inline-block';
       V = await api('/api/challenges'); render();
+      document.body.classList.add('logged-in');
+      document.querySelector('#lab').scrollIntoView();
     }
 
     authMessage.className = 'good';
@@ -287,12 +311,20 @@ api('/api/me').then(state => {
     authMessage.textContent = 'Logged in as ' + state.username;
     authMessage.className = 'good';
     document.querySelector('#logoutBtn').style.display = 'inline-block';
+    document.body.classList.add('logged-in');
+    api('/api/challenges').then(v => {
+      V = v;
+      sel = (v.challenges.find(c => c.status === 'open') || {}).id || null;
+      render();
+});
   }
 }).catch(err => {
   console.error('Could not check login status:', err);
 });
 /* Player logout */
-document.querySelector('#logoutBtn').addEventListener('click', async () => {
+document.querySelector('#dashboardLogoutBtn').addEventListener('click', () => {
+  document.querySelector('#logoutBtn').click();
+});
   const message = document.querySelector('#authMessage');
   try {
     await api('/api/logout', {});
@@ -300,9 +332,10 @@ document.querySelector('#logoutBtn').addEventListener('click', async () => {
     document.querySelector('#authForm').reset();
     message.textContent = 'Logged out successfully.';
     message.className = 'good';
-    V = await api('/api/challenges');
+    V = null;
     sel = null;
-    render();
+    document.body.classList.remove('logged-in');
+    window.scrollTo(0, 0);
   } catch (err) {
     message.textContent = err.message;
     message.className = 'bad';
