@@ -1,0 +1,6 @@
+data/progress.json
+organiser_only/flags.json
+.env
+
+data/accounts.json
+*.backup

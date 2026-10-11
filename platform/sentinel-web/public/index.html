@@ -1,0 +1,311 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Operation Sentinel 2026 — CTF Lab</title>
+<style>
+:root{--h:190;--c:hsl(var(--h) 100% 60%);--bg:#05070d;--tx:#dbe7f5;--mu:#7e8ea6;--ok:#38f5a0;--er:#ff4d6d}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.55 system-ui,Segoe UI,sans-serif}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+canvas#bg{position:fixed;inset:0;width:100%;height:100%;z-index:-2}
+#glow{position:fixed;width:520px;height:520px;margin:-260px 0 0 -260px;border-radius:50%;pointer-events:none;z-index:-1;background:radial-gradient(circle,hsl(var(--h) 100% 55%/.16),transparent 65%)}
+.mono{font-family:ui-monospace,Consolas,monospace}
+section{min-height:100vh;padding:88px 6vw 60px;max-width:1200px;margin:auto}
+nav{position:fixed;top:0;left:0;right:0;z-index:5;display:flex;gap:18px;align-items:center;padding:12px 6vw;background:#05070dcc;backdrop-filter:blur(6px);border-bottom:1px solid #ffffff12}
+nav b{margin-right:auto;letter-spacing:.14em;font-size:13px;color:var(--c)}nav a{color:var(--mu);text-decoration:none;font-size:14px}nav a:hover,nav a:focus{color:#fff}
+#score{font-size:13px;color:var(--ok)}
+h1{font-size:clamp(2.4rem,7vw,5.2rem);line-height:1;margin:.3em 0;letter-spacing:-.02em}
+h1 span{color:var(--c);text-shadow:0 0 28px var(--c)}
+h2{font-size:1.9rem;margin:0 0 .3em}
+.hero{display:flex;flex-direction:column;justify-content:center}
+#term{min-height:7.6em;color:#8fe9ff;font-size:14px;white-space:pre-wrap}
+.btn{display:inline-block;background:transparent;color:var(--c);border:1px solid var(--c);padding:12px 26px;font:600 14px ui-monospace,monospace;letter-spacing:.12em;cursor:pointer;border-radius:4px;transition:.2s;text-decoration:none}
+.btn:hover,.btn:focus-visible{background:var(--c);color:#001018;box-shadow:0 0 24px var(--c)}
+.scroll{margin-top:40px;color:var(--mu);font-size:12px;letter-spacing:.2em;animation:b 1.6s infinite}@keyframes b{50%{transform:translateY(7px)}}
+.glass{background:#0c1424b8;border:1px solid #ffffff1a;border-radius:12px;padding:20px;backdrop-filter:blur(8px)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px;margin:26px 0}
+.card{position:relative;text-align:left;color:inherit;font:inherit;cursor:pointer;transition:transform .15s,border-color .2s,box-shadow .2s;transform-style:preserve-3d}
+.card:hover,.card:focus-visible{border-color:var(--c);box-shadow:0 0 28px hsl(var(--h) 100% 50%/.3)}
+.card.locked{opacity:.5}.card.solved{border-color:var(--ok)}.card.sel{outline:2px solid var(--c)}
+.card small{color:var(--mu)}.tag{float:right;font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid currentColor}
+.t-open{color:var(--c)}.t-solved{color:var(--ok)}.t-locked{color:var(--mu)}
+.card:not(:last-child)::after{content:"→";position:absolute;right:-16px;top:50%;color:var(--mu);pointer-events:none}
+@media(max-width:700px){.card::after{display:none}}
+#det .row{margin:.5em 0}#det .k{color:var(--mu);font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+input[type=text],input[type=number]{width:100%;background:#050a14;color:var(--tx);border:1px solid #ffffff2a;border-radius:4px;padding:11px;font:15px ui-monospace,monospace}
+input:focus{outline:2px solid var(--c)}
+.hint{padding:8px 12px;margin:6px 0;border-left:3px solid var(--c);background:#ffffff08}
+#fb{min-height:1.6em;margin-top:10px;font-weight:600}.good{color:var(--ok)}.bad{color:var(--er);animation:sh .3s}@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.bar{height:6px;background:#ffffff14;border-radius:9px;overflow:hidden;margin:8px 0}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--c),var(--ok));transition:width .4s}
+.flex{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.flex>*{flex:1 1 220px}
+.swatch{height:150px;border-radius:12px;border:1px solid #ffffff30;transition:background .12s;display:flex;align-items:end;padding:8px;font-size:13px}
+.sl{display:grid;grid-template-columns:24px 1fr 56px;gap:10px;align-items:center;margin:8px 0}.sl input[type=range]{width:100%}
+#done{display:none;text-align:center;padding-top:20vh}#done.on{display:block}#done h2{font-size:3rem;color:var(--ok);text-shadow:0 0 30px var(--ok)}
+canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:9}
+.note{color:var(--mu);font-size:13px}
+
+/* Improved Challenge Console */
+#det {
+    padding: 28px;
+    line-height: 1.7;
+}
+
+#det h3 {
+    font-size: 1.5rem;
+    color: #38bdf8;
+    margin: 0 0 24px;
+}
+
+#det .row {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 14px 0;
+}
+
+#det .row .k,
+#det > .k {
+    color: #7dd3fc;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+}
+
+#det .hint {
+    border-radius: 8px;
+    padding: 14px;
+    margin: 10px 0;
+}
+
+#det .btn {
+    margin-top: 12px;
+}
+
+</style></head><body>
+<canvas id="bg" aria-hidden="true"></canvas><div id="glow"></div><canvas id="fx" aria-hidden="true"></canvas>
+<nav><b class="mono">SENTINEL//2026</b><a href="#lab">Stages</a><a href="#console">Console</a><a href="#colour">Colour Lab</a><span id="score" class="mono" aria-live="polite"></span></nav>
+<main>
+<section id="account">
+ <h2>Player Account</h2>
+ <p class="note">Register or log in to save your CTF progress.</p>
+ <div class="glass" style="max-width:480px">
+  <form id="authForm">
+   <label for="authUser">Username</label>
+   <input id="authUser" type="text" minlength="3" maxlength="24" autocomplete="username" required>
+   <label for="authPass">Password</label>
+   <input id="authPass" type="password" minlength="10" autocomplete="current-password" required>
+   <p class="flex">
+    <button class="btn" type="submit" id="loginBtn">LOGIN</button>
+    <button class="btn" type="button" id="registerBtn">REGISTER</button>
+   </p>
+  </form>
+  <p id="authMessage" class="note" aria-live="polite"></p>
+  <button class="btn" type="button" id="logoutBtn" style="display:none">LOGOUT</button>
+ </div>
+</section>
+
+<section class="hero" id="top">
+ <div class="mono note">IE3132 PENETRATION TESTING · SLIIT BSc (Hons) IT · YEAR 3 SEM 1</div>
+ <h1>OPERATION<br><span>SENTINEL</span> 2026</h1>
+ <div id="term" class="mono" aria-label="Platform introduction"></div>
+ <div><a class="btn" href="#lab">ENTER THE LAB</a></div><div class="scroll mono">SCROLL ↓</div>
+</section>
+<section id="lab">
+ <h2>Incident Investigation Map</h2>
+ <p class="note">Six connected stages. Each stage unlocks only after the server accepts the previous flag; opening a card never marks it solved.</p>
+ <div class="bar" role="progressbar" aria-label="Score"><i id="pb" style="width:0"></i></div>
+ <div class="grid" id="grid"></div>
+ <p class="note">Platform progress only. Evidence files and challenge containers are served by your CTF infrastructure (see README).</p>
+</section>
+<section id="console">
+ <h2>Challenge Console</h2>
+ <div class="glass" id="det"><p class="note">Select an unlocked stage above.</p></div>
+</section>
+<section id="colour">
+ <h2>Colour Match <span class="note">(optional game — not one of the six assessed stages)</span></h2>
+ <div class="glass">
+  <div class="flex"><div><div class="swatch" id="tg" style="background:#000">Target</div></div><div><div class="swatch" id="pk">Yours</div></div></div>
+  <div id="sls"></div>
+  <div class="flex"><label>HEX <input type="text" id="hx" maxlength="7" aria-label="Hex colour" value="#808080"></label>
+   <label>Match threshold %<input type="number" id="th" min="50" max="99" value="90"></label>
+   <label>Timer (s, 0 = off)<input type="number" id="tm" min="0" max="120" value="0"></label></div>
+  <p class="flex"><button class="btn" id="go">SUBMIT GUESS</button><button class="btn" id="nx">NEXT ROUND</button><span id="gs" class="mono" aria-live="polite"></span></p>
+  <p class="note">Method: Euclidean distance in sRGB, d = √(ΔR²+ΔG²+ΔB²), accuracy = 100·(1 − d/441.67). Simple and transparent; it is not perceptually uniform (CIEDE2000 would be more accurate).</p>
+ </div>
+</section>
+<section id="done"><h2 class="mono">SYSTEM SECURED</h2><p>All six stages validated by the server. Investigation complete.</p><p class="mono" id="fin"></p></section>
+</main>
+<script>
+const $=(s,r=document)=>r.querySelector(s),RM=matchMedia('(prefers-reduced-motion:reduce)').matches,coarse=matchMedia('(pointer:coarse)').matches;
+const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+let M={x:-999,y:-999},sel=null,V=null;
+/* ---------- background: network mesh + parallax, evolves with scroll ---------- */
+const bg=$('#bg'),g=bg.getContext('2d');let W,H,P=[];
+function size(){W=bg.width=innerWidth;H=bg.height=innerHeight;P=Array.from({length:Math.min(90,W*H/16000|0)},()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,z:Math.random()}))}
+addEventListener('resize',size);size();
+function frame(){
+ const sp=scrollY/Math.max(1,document.body.scrollHeight-innerHeight),dens=1-sp*.55; // fewer nodes deeper in
+ document.documentElement.style.setProperty('--h',Math.round(190+sp*90)); // cyan -> violet
+ g.clearRect(0,0,W,H);const ox=(M.x-W/2)*.02,oy=(M.y-H/2)*.02,hue=190+sp*90,n=P.length*dens|0;
+ // perspective grid that scrolls
+ g.strokeStyle=`hsla(${hue},100%,60%,.07)`;g.lineWidth=1;const off=(scrollY*.2)%60;
+ for(let i=0;i<W;i+=60){g.beginPath();g.moveTo(i+ox*3,0);g.lineTo(i+ox*3,H);g.stroke()}
+ for(let j=-60;j<H;j+=60){g.beginPath();g.moveTo(0,j+off);g.lineTo(W,j+off);g.stroke()}
+ for(let i=0;i<n;i++){const a=P[i];if(!RM){a.x+=a.vx;a.y+=a.vy;if(a.x<0||a.x>W)a.vx*=-1;if(a.y<0||a.y>H)a.vy*=-1}
+  const dx=a.x-M.x,dy=a.y-M.y,d=Math.hypot(dx,dy);if(!RM&&d<140){a.x+=dx/d*1.4;a.y+=dy/d*1.4}
+  a.px=a.x+ox*a.z*8;a.py=a.y+oy*a.z*8;g.fillStyle=`hsla(${hue},100%,70%,.8)`;g.fillRect(a.px,a.py,2,2);
+  for(let k=i+1;k<n;k++){const b=P[k],l=Math.hypot(a.px-(b.px||b.x),a.py-(b.py||b.y));if(l<110){g.strokeStyle=`hsla(${hue},100%,60%,${(1-l/110)*.25})`;g.beginPath();g.moveTo(a.px,a.py);g.lineTo(b.px||b.x,b.py||b.y);g.stroke()}}}
+ requestAnimationFrame(frame)}
+frame();
+addEventListener('pointermove',e=>{M.x=e.clientX;M.y=e.clientY;const gl=$('#glow');gl.style.left=M.x+'px';gl.style.top=M.y+'px'});
+if(coarse)$('#glow').style.display='none';
+/* ---------- terminal intro (descriptive text only, not fake execution) ---------- */
+const lines=['> Operation Sentinel 2026 — fictional incident investigation','> Role: Junior Incident Response Analyst','> 6 stages · OSINT → Web → Forensics → Network → Linux → Hybrid','> Flags are validated server-side. Good luck.'];
+(async()=>{const t=$('#term');for(const l of lines){for(const ch of l){t.textContent+=ch;if(!RM)await new Promise(r=>setTimeout(r,16))}t.textContent+='\n'}})();
+/* ---------- platform ---------- */
+async function api(p,b){const r=await fetch(p,b?{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)}:{});const j=await r.json();if(!r.ok)throw new Error(j.error||r.status);return j}
+function render(){
+ const gr=$('#grid');gr.textContent='';
+ V.challenges.forEach(c=>{const b=el('button','glass card '+c.status+(sel===c.id?' sel':''));b.type='button';b.disabled=false;
+  const tg=el('span','tag mono t-'+c.status,c.status.toUpperCase());b.append(tg,el('b','mono',c.id),el('div',null,c.title),el('small',null,c.domain+' · '+c.difficulty+' · '+c.points+' pts'));
+  if(c.status==='locked')b.setAttribute('aria-label',c.id+' locked, solve '+c.requires+' first');
+  b.onclick=()=>{if(c.status==='locked'){fb(b,'Locked — solve '+c.requires+' first')}else{sel=c.id;render();$('#console').scrollIntoView()}};
+  if(!coarse&&!RM)b.onpointermove=e=>{const r=b.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;b.style.transform=`perspective(600px) rotateY(${x*10}deg) rotateX(${-y*10}deg)`};
+  b.onpointerleave=()=>b.style.transform='';gr.append(b)});
+ $('#score').textContent='SCORE '+V.score+'/'+V.max;$('#pb').style.width=V.score/V.max*100+'%';
+ const c=V.challenges.find(x=>x.id===sel);detail(c);
+ $('#done').classList.toggle('on',V.complete);if(V.complete)$('#fin').textContent='Final score '+V.score+' / '+V.max}
+function fb(node,m){node.title=m}
+function detail(c){const d=$('#det');if(!c||c.status==='locked'){d.textContent='';d.append(el('p','note','Select an unlocked stage above.'));return}
+ d.textContent='';const row=(k,v)=>{const r=el('div','row');r.append(el('div','k',k),el('div',null,v));d.append(r)};
+ d.append(el('h3',null,c.id+' — '+c.title));row('Domain · Difficulty · Points',c.domain+' · '+c.difficulty+' · '+c.points);row('Scenario',c.scenario);row('Objective',c.objective);row('Suggested tools',c.tools);row('Evidence / target',c.evidence);
+ d.append(el('div','k','Hints (cost deducted from this stage’s points)'));
+
+ c.hints.forEach(h=>{
+   const box=el('div','hint');
+   const message=el('div');
+   box.append(message);
+
+   const update=()=>{
+     const left=Math.max(0,Math.ceil(((h.expiresAt||0)-Date.now())/1000));
+
+     if(h.text&&left>0){
+       message.textContent='Hint '+h.n+': '+h.text+' ? '+left+' seconds remaining';
+     }else{
+       message.textContent='Hint '+h.n+' is hidden.';
+       if(!box.querySelector('button')){
+         const again=el('button','btn','VIEW HINT '+h.n+' AGAIN');
+         again.onclick=async()=>{
+           try{
+             V=await api('/api/hint',{id:c.id,n:h.n});
+             render();
+           }catch(e){
+             alert(e.message);
+           }
+         };
+         box.append(again);
+       }
+     }
+     return left;
+   };
+
+   update();
+   d.append(box);
+
+   if(h.text&&h.expiresAt>Date.now()){
+     const timer=setInterval(()=>{
+       if(!box.isConnected||!update()) clearInterval(timer);
+     },250);
+   }
+ });
+
+ if(c.status!=='solved'&&c.hints.length<c.hintCosts.length){const n=c.hints.length+1,b=el('button','btn','UNLOCK HINT '+n+(c.hintCosts[n-1]?' (−'+c.hintCosts[n-1]+' pts)':' (free)'));b.onclick=async()=>{try{V=await api('/api/hint',{id:c.id,n});render()}catch(e){alert(e.message)}};d.append(b)}
+ const f=el('div','row');
+ if(c.status==='solved'){f.append(el('div','good','✔ Solved — earned '+c.earned+' pts'))}
+ else{const i=el('input');i.type='text';i.placeholder='FLAG{SENTINEL_...}';i.setAttribute('aria-label','Flag');i.autocomplete='off';const b=el('button','btn','SUBMIT FLAG'),o=el('div');o.id='fb';o.setAttribute('aria-live','polite');
+  const go=async()=>{try{const r=await api('/api/submit',{id:c.id,flag:i.value});if(r.correct){V=r;const nx=V.challenges[V.challenges.findIndex(x=>x.id===c.id)+1];if(nx)sel=nx.id;burst();render();const f2=$('#fb');if(f2){f2.textContent='✔ Correct — stage recorded'+(nx?'. '+nx.id+' unlocked.':'.');f2.className='good'}}else{V=r;o.textContent='✘ Incorrect flag';o.className='bad'}}catch(e){o.textContent='✘ '+e.message;o.className='bad'}};
+  b.onclick=go;i.onkeydown=e=>{if(e.key==='Enter')go()};f.append(i,el('div',null),b,o)}
+ d.append(f);const rs=el('button','btn','RESET MY PROGRESS');rs.style.marginTop='18px';rs.onclick=async()=>{if(confirm('Reset your progress for all stages?')){V=await api('/api/reset',{});sel=null;render()}};d.append(rs)}
+/* ---------- particle burst ---------- */
+const fx=$('#fx'),f=fx.getContext('2d');let B=[];
+function burst(x=innerWidth/2,y=innerHeight/2,col='#38f5a0'){if(RM)return;fx.width=innerWidth;fx.height=innerHeight;for(let i=0;i<70;i++){const a=Math.random()*6.28,s=2+Math.random()*6;B.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,l:1,c:col})}if(B.length===70)spin()}
+function spin(){f.clearRect(0,0,fx.width,fx.height);B=B.filter(p=>p.l>0);B.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.12;p.l-=.02;f.globalAlpha=Math.max(0,p.l);f.fillStyle=p.c;f.fillRect(p.x,p.y,3,3)});if(B.length)requestAnimationFrame(spin);else f.clearRect(0,0,fx.width,fx.height)}
+/* ---------- colour game ---------- */
+const rgb=[128,128,128];let tgt=[0,0,0],tick=null,round=0,tot=0;
+const hex=a=>'#'+a.map(v=>v.toString(16).padStart(2,'0')).join(''),dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
+['R','G','B'].forEach((n,i)=>{const r=el('div','sl'),s=el('input');s.type='range';s.min=0;s.max=255;s.value=128;s.setAttribute('aria-label',n+' channel');const o=el('output','mono','128');s.oninput=()=>{rgb[i]=+s.value;o.textContent=s.value;sync()};r.append(el('b',null,n),s,o);r._s=s;r._o=o;$('#sls').append(r)});
+function sync(skip){$('#pk').style.background=hex(rgb);if(!skip)$('#hx').value=hex(rgb)}
+$('#hx').oninput=e=>{const m=/^#?([0-9a-f]{6})$/i.exec(e.target.value);if(m){for(let i=0;i<3;i++)rgb[i]=parseInt(m[1].substr(i*2,2),16);[...$('#sls').children].forEach((r,i)=>{r._s.value=rgb[i];r._o.textContent=rgb[i]});sync(1)}};
+function newRound(){tgt=[0,0,0].map(()=>Math.random()*256|0);$('#tg').style.background=hex(tgt);$('#gs').textContent='Round '+(++round)+' · total '+tot;clearInterval(tick);const t=+$('#tm').value;if(t>0){let l=t;tick=setInterval(()=>{$('#gs').textContent='Round '+round+' · '+(--l)+'s left';if(l<=0){clearInterval(tick);submit(true)}},1000)}}
+function submit(timeout){clearInterval(tick);const d=dist(rgb,tgt),acc=100*(1-d/441.67),pts=Math.round(acc*acc/100),th=+$('#th').value||90;if(acc>=th){tot+=pts;burst(innerWidth/2,innerHeight/2,hex(tgt))}
+ $('#gs').textContent=`${timeout?'Time up. ':''}Accuracy ${acc.toFixed(1)}% (distance ${d.toFixed(1)}) · ${acc>=th?'MATCH! +'+pts:'below '+th+'% — '+(acc>75?'close':'try again')} · total ${tot}`;$('#tg').textContent='Target '+hex(tgt)}
+$('#go').onclick=()=>submit(false);$('#nx').onclick=()=>{$('#tg').textContent='Target';newRound()};newRound();sync();
+api('/api/challenges').then(v=>{V=v;sel=(v.challenges.find(c=>c.status==='open')||{}).id||null;render()}).catch(e=>{$('#grid').textContent='Backend unreachable: '+e.message});
+/* Player login and registration */
+const authForm = document.querySelector('#authForm');
+const authMessage = document.querySelector('#authMessage');
+const authUser = document.querySelector('#authUser');
+const authPass = document.querySelector('#authPass');
+
+async function playerAuth(mode) {
+  const username = authUser.value.trim();
+  const password = authPass.value;
+
+  authMessage.textContent = 'Please wait...';
+  authMessage.className = 'note';
+
+  try {
+    const result = await api('/api/' + mode, { username, password });
+
+    if (mode === 'register') {
+      authMessage.textContent = 'Account created! Please click LOGIN.';
+    } else {
+      authMessage.textContent = 'Logged in as ' + result.username;
+      authPass.value = '';
+      document.querySelector('#logoutBtn').style.display = 'inline-block';
+      V = await api('/api/challenges'); render();
+    }
+
+    authMessage.className = 'good';
+  } catch (err) {
+    authMessage.textContent = err.message;
+    authMessage.className = 'bad';
+  }
+}
+
+authForm.addEventListener('submit', event => {
+  event.preventDefault();
+  playerAuth('login');
+});
+
+document.querySelector('#registerBtn').addEventListener('click', () => {
+  if (authForm.reportValidity()) playerAuth('register');
+});
+/* Restore player login status after refresh */
+api('/api/me').then(state => {
+  if (state.loggedIn) {
+    authMessage.textContent = 'Logged in as ' + state.username;
+    authMessage.className = 'good';
+    document.querySelector('#logoutBtn').style.display = 'inline-block';
+  }
+}).catch(err => {
+  console.error('Could not check login status:', err);
+});
+/* Player logout */
+document.querySelector('#logoutBtn').addEventListener('click', async () => {
+  const message = document.querySelector('#authMessage');
+  try {
+    await api('/api/logout', {});
+    document.querySelector('#logoutBtn').style.display = 'none';
+    document.querySelector('#authForm').reset();
+    message.textContent = 'Logged out successfully.';
+    message.className = 'good';
+    V = await api('/api/challenges');
+    sel = null;
+    render();
+  } catch (err) {
+    message.textContent = err.message;
+    message.className = 'bad';
+  }
+});
+</script></body></html>
