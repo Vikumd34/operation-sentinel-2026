@@ -103,3 +103,20 @@ Stopping or restarting Docker does not intentionally reset player progress.
 
 Note: This Docker setup runs the Node.js CTF web platform.
 Full isolation of any separate challenge services must be verified independently.
+## Fresh Clone Setup (Organizer / Lecturer)
+
+Requirements: Node.js 18+, Python 3.
+
+From the repository root:
+
+1. Run: python setup_flags.py
+2. Run: cd platform/sentinel-web
+3. Run: node server.js
+4. Open: http://127.0.0.1:8080
+
+Docker alternative (from repository root, after step 1):
+docker compose -f platform/sentinel-web/compose.yaml up -d --build
+Open: http://127.0.0.1:8081
+
+Keep generated private flags secret. Do not commit them.
+Players should access the hosted challenges, not organizer files.

@@ -5,9 +5,35 @@ from pathlib import Path
 from flask import Flask, render_template, request, send_from_directory, session
 
 app = Flask(__name__)
-app.secret_key = os.environ["FLASK_SECRET_KEY"]
+app.secret_key = os.environ.get("FLASK_SECRET_KEY") or secrets.token_hex(32)
 
 DATABASE = Path(__file__).resolve().parent / "data" / "sentinel.db"
+
+
+def init_database():
+    DATABASE.parent.mkdir(parents=True, exist_ok=True)
+
+    with sqlite3.connect(DATABASE) as connection:
+        connection.execute("""
+            CREATE TABLE IF NOT EXISTS player_progress (
+                player_id TEXT PRIMARY KEY,
+                completed INTEGER NOT NULL DEFAULT 0,
+                total_penalty INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+
+        connection.execute("""
+            CREATE TABLE IF NOT EXISTS hint_usage (
+                player_id TEXT NOT NULL,
+                hint_number INTEGER NOT NULL,
+                PRIMARY KEY (player_id, hint_number),
+                FOREIGN KEY (player_id)
+                    REFERENCES player_progress(player_id)
+            )
+        """)
+
+
+init_database()
 
 
 def get_db_connection():
