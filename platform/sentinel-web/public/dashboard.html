@@ -182,6 +182,49 @@ if(c.id==='OS-01'){
   a.href='/evidence/noc_ticket_4721.png';
   a.download='noc_ticket_4721.png';
   d.append(a);
+
+  const instructions = el('p','note',
+    'Inspect the downloaded screenshot metadata. Enter the incident reference you discover to reveal the OS-01 flag.');
+  d.append(instructions);
+
+  const verifyRow = el('div','row');
+  const referenceInput = el('input');
+  referenceInput.type = 'text';
+  referenceInput.placeholder = 'Incident reference (INC-XXXX)';
+  referenceInput.setAttribute('aria-label','Incident reference');
+  referenceInput.autocomplete = 'off';
+
+  const verifyButton = el('button','btn','VERIFY INCIDENT REFERENCE');
+  const verifyResult = el('div');
+  verifyResult.setAttribute('aria-live','polite');
+
+  const verifyIncident = async () => {
+    try {
+      const result = await api('/api/verify-incident',{
+        id:'OS-01',
+        reference:referenceInput.value
+      });
+
+      if(result.verified){
+        verifyResult.textContent = 'Correct! Your OS-01 flag: ' + result.flag;
+        verifyResult.className = 'good';
+      }else{
+        verifyResult.textContent = 'Incorrect reference. Review the image metadata.';
+        verifyResult.className = 'bad';
+      }
+    }catch(error){
+      verifyResult.textContent = error.message;
+      verifyResult.className = 'bad';
+    }
+  };
+
+  verifyButton.onclick = verifyIncident;
+  referenceInput.onkeydown = e => {
+    if(e.key === 'Enter') verifyIncident();
+  };
+
+  verifyRow.append(referenceInput, verifyButton);
+  d.append(verifyRow, verifyResult);
 }
  d.append(el('div','k','Hints (cost deducted from this stage’s points)'));
 

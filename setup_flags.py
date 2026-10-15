@@ -18,6 +18,9 @@ for n in range(1, 7):
 
     if file.exists():
         flag = file.read_text(encoding="utf-8-sig").strip()
+    elif n == 1:
+        flag = "FLAG{SENTINEL_INC4721_DISCOVERED}"
+        file.write_text(flag + "\n", encoding="utf-8")
     elif n == 2:
         attachment = (
             root / "challenges" / "os02_ticket_4721"
