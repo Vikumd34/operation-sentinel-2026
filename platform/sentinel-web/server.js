@@ -186,6 +186,26 @@ const server = http.createServer(async (req, res) => {
 
         return send(200, view(s));
       }
+      if (p === '/api/verify-incident') {
+        if (b.id !== 'OS-01') return send(400, { error: 'invalid stage' });
+
+        const key = 'verify:' + sid + ':' + Math.floor(Date.now() / 60000);
+        hits.set(key, (hits.get(key) || 0) + 1);
+        if (hits.size > 5000) hits.clear();
+        if (hits.get(key) > 10) {
+          return send(429, { error: 'too many attempts, wait a minute' });
+        }
+
+        if (typeof b.reference !== 'string' || b.reference.length > 64) {
+          return send(400, { error: 'invalid incident reference' });
+        }
+
+        if (!eq(b.reference.trim().toUpperCase(), 'INC-4721')) {
+          return send(200, { verified: false });
+        }
+
+        return send(200, { verified: true, flag: FLAGS['OS-01'] });
+      }
       if (p === '/api/submit') {
         const k = sid + ':' + Math.floor(Date.now() / 60000); hits.set(k, (hits.get(k) || 0) + 1);
         if (hits.size > 5000) hits.clear();
