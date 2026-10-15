@@ -30,3 +30,5 @@ Thumbs.db
 *.db-journal
 *.db-wal
 *.db-shm
+# Private web platform flags
+platform/sentinel-web/organiser_only/flags.json
