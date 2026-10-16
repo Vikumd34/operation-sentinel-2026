@@ -22,16 +22,7 @@ for n in range(1, 7):
         flag = "FLAG{SENTINEL_INC4721_DISCOVERED}"
         file.write_text(flag + "\n", encoding="utf-8")
     elif n == 2:
-        attachment = (
-            root / "challenges" / "os02_ticket_4721"
-            / "helpdesk_web" / "attachments" / "maintenance-note.txt"
-        )
-        import re
-        match = re.search(r"Stage Verification:\s*(FLAG\{[^}\r\n]+\})",
-                          attachment.read_text(encoding="utf-8"))
-        if not match:
-            raise SystemExit("ERROR: OS-02 attachment flag not found.")
-        flag = match.group(1)
+        flag = "FLAG{SENTINEL_TICKET4721_REVIEWED}"
         file.write_text(flag + "\n", encoding="utf-8")
     else:
         flag = f"FLAG{{SENTINEL_OS{n:02d}_{secrets.token_hex(12).upper()}}}"

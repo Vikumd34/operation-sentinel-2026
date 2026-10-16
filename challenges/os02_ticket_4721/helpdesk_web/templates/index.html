@@ -45,47 +45,47 @@
 
 <hr>
 
-<h2>CTF Flag Submission</h2>
+<h2>Maintenance Evidence Verification</h2>
 
-<p>Enter the flag you discovered from Ticket 4721.</p>
+<p>
+Review the incident attachment and verify the maintenance
+details recorded in the ticket.
+</p>
 
-<form method="POST" action="/submit-flag">
+<form method="POST" action="/verify-evidence">
 
-    <label for="flag">Flag:</label>
-
+    <label for="maintenance_window">Approved Maintenance Window:</label>
     <input
         type="text"
-        id="flag"
-        name="flag"
-        placeholder="FLAG{...}"
+        id="maintenance_window"
+        name="maintenance_window"
+        placeholder="HH:MM-HH:MM"
         required
     >
 
-    <button type="submit">Submit Flag</button>
+    <br><br>
+
+    <label for="maintenance_account">Temporary Maintenance Account:</label>
+    <input
+        type="text"
+        id="maintenance_account"
+        name="maintenance_account"
+        placeholder="Account name"
+        required
+    >
+
+    <br><br>
+
+    <button type="submit">Verify Evidence</button>
 
 </form>
+
+<p>
+After successful verification, submit your OS-02 flag
+on the main Sentinel dashboard.
+</p>
+
 <hr>
 
-<h2>Challenge Hints</h2>
-
-<details>
-    <summary>Hint 1 (Free)</summary>
-    <p>Start by searching for the incident reference discovered in OS-01.</p>
-</details>
-<details>
-    <summary>Hint 2 (5-point penalty)</summary>
-
-
-    <form action="/use-hint/2" method="POST">
-        <button type="submit">Record Hint 2 Usage</button>
-    </form>
-</details>
-<details>
-    <summary>Hint 3 (10-point penalty)</summary>
-
-    <form action="/use-hint/3" method="POST">
-        <button type="submit">Record Hint 3 Usage</button>
-    </form>
-</details>
 </body>
 </html>

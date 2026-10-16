@@ -226,6 +226,15 @@ if(c.id==='OS-01'){
   verifyRow.append(referenceInput, verifyButton);
   d.append(verifyRow, verifyResult);
 }
+ if(c.id==='OS-02'){
+  const helpdesk = el('a','btn','OPEN SENTINEL HELPDESK');
+  helpdesk.href='http://127.0.0.1:5000/';
+  helpdesk.target='_blank';
+  helpdesk.rel='noopener noreferrer';
+  d.append(helpdesk);
+  d.append(el('p','note',
+    'Investigate the incident using the reference recovered in OS-01. Review the available evidence and return here to submit your flag.'));
+ }
  d.append(el('div','k','Hints (cost deducted from this stage’s points)'));
 
  c.hints.forEach(h=>{

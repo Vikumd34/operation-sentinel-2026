@@ -120,3 +120,34 @@ Open: http://127.0.0.1:8081
 
 Keep generated private flags secret. Do not commit them.
 Players should access the hosted challenges, not organizer files.
+
+## OS-02 Sentinel Helpdesk Setup
+
+OS-02 requires a separate local Flask Helpdesk service.
+
+Requirements: Python 3 and Flask.
+
+First, run python setup_flags.py from the repository root.
+
+Terminal 1 - Start the main Sentinel dashboard:
+
+    cd platform\sentinel-web
+    node server.js
+
+Dashboard URL: http://127.0.0.1:8080
+
+Terminal 2 - Start the Helpdesk from the repository root:
+
+    python -m pip install flask
+    python .\challenges\os02_ticket_4721\helpdesk_web\app.py
+
+Helpdesk URL: http://127.0.0.1:5000
+
+After unlocking OS-02, click OPEN SENTINEL HELPDESK
+on the main dashboard.
+
+Investigate the ticket, verify the evidence, and submit
+the recovered flag on the main dashboard.
+
+Docker Compose currently starts only the Node.js dashboard.
+The Flask Helpdesk must be started separately.
