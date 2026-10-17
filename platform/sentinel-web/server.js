@@ -206,6 +206,37 @@ const server = http.createServer(async (req, res) => {
 
         return send(200, { verified: true, flag: FLAGS['OS-01'] });
       }
+      if (p === '/api/verify-event') {
+        if (b.id !== 'OS-03') return send(400, { error: 'invalid stage' });
+
+        const key = 'event:' + sid + ':' + Math.floor(Date.now() / 60000);
+        hits.set(key, (hits.get(key) || 0) + 1);
+        if (hits.size > 5000) hits.clear();
+        if (hits.get(key) > 10) {
+          return send(429, { error: 'too many attempts, wait a minute' });
+        }
+
+        const fields = [b.eventId, b.sourceIp, b.destination];
+        if (fields.some(v => typeof v !== 'string' || v.length > 100)) {
+          return send(400, { error: 'invalid investigation details' });
+        }
+
+        const csvPath = path.join(ROOT, 'public', 'evidence', 'security_events.csv');
+        const rows = fs.readFileSync(csvPath, 'utf8').trim().split(/\r?\n/);
+        const verified = rows.slice(1).some(line => {
+          const cols = line.split(',');
+          return cols.length === 7 &&
+            cols[0].startsWith('2026-09-26 23:47') &&
+            cols[2] === 'ops_readonly' &&
+            eq(cols[1], b.eventId.trim()) &&
+            eq(cols[3], b.sourceIp.trim()) &&
+            eq(cols[4], b.destination.trim());
+        });
+
+        if (!verified) return send(200, { verified: false });
+
+        return send(200, { verified: true, flag: FLAGS['OS-03'] });
+      }
       if (p === '/api/submit') {
         const k = sid + ':' + Math.floor(Date.now() / 60000); hits.set(k, (hits.get(k) || 0) + 1);
         if (hits.size > 5000) hits.clear();
