@@ -235,6 +235,65 @@ if(c.id==='OS-01'){
   d.append(el('p','note',
     'Investigate the incident using the reference recovered in OS-01. Review the available evidence and return here to submit your flag.'));
  }
+ if(c.id==='OS-03'){
+  const download = el('a','btn','DOWNLOAD SECURITY EVENTS CSV');
+  download.href='/evidence/security_events.csv';
+  download.download='security_events.csv';
+  d.append(download);
+
+  d.append(el('p','note',
+    'Use the maintenance window and account from OS-02 to investigate the security logs. Identify the relevant event, source IP, and destination.'));
+
+  const inputs = el('div','row');
+  const eventId = el('input');
+  eventId.type='text';
+  eventId.placeholder='Event ID';
+  eventId.setAttribute('aria-label','Event ID');
+
+  const sourceIp = el('input');
+  sourceIp.type='text';
+  sourceIp.placeholder='Source IP';
+  sourceIp.setAttribute('aria-label','Source IP');
+
+  const destination = el('input');
+  destination.type='text';
+  destination.placeholder='Destination';
+  destination.setAttribute('aria-label','Destination');
+
+  inputs.append(eventId,sourceIp,destination);
+  d.append(inputs);
+
+  const verifyButton = el('button','btn','VERIFY INVESTIGATION');
+  const result = el('div');
+  result.setAttribute('aria-live','polite');
+
+  const verify = async () => {
+    verifyButton.disabled=true;
+    try {
+      const response = await api('/api/verify-event',{
+        id:'OS-03',
+        eventId:eventId.value,
+        sourceIp:sourceIp.value,
+        destination:destination.value
+      });
+      if(response.verified){
+        result.textContent='Investigation successful! Your OS-03 flag: '+response.flag;
+        result.className='good';
+      }else{
+        result.textContent='Incorrect details. Review the security events.';
+        result.className='bad';
+      }
+    }catch(e){
+      result.textContent=e.message;
+      result.className='bad';
+    }finally{
+      verifyButton.disabled=false;
+    }
+  };
+
+  verifyButton.onclick=verify;
+  d.append(verifyButton,result);
+ }
  d.append(el('div','k','Hints (cost deducted from this stage’s points)'));
 
  c.hints.forEach(h=>{
