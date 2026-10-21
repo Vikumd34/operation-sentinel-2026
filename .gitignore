@@ -32,3 +32,7 @@ Thumbs.db
 *.db-shm
 # Private web platform flags
 platform/sentinel-web/organiser_only/flags.json
+platform/sentinel-web/organiser_only/os04_answers.json
+
+challenges/os04_missing_packet/validator.py
+challenges/os04_missing_packet/generate_pcap.py
