@@ -235,6 +235,69 @@ if(c.id==='OS-01'){
   d.append(el('p','note',
     'Investigate the incident using the reference recovered in OS-01. Review the available evidence and return here to submit your flag.'));
  }
+
+ if(c.id==='OS-04'){
+  const download = el('a','btn','DOWNLOAD PACKET CAPTURE (PCAP)');
+  download.href='/evidence/sentinel_traffic.pcap';
+  download.download='sentinel_traffic.pcap';
+  d.append(download);
+
+  d.append(el('p','note',
+    'Wireshark Quick Tip: Use the Display Filter bar at the top of Wireshark. Filter format: ip.addr == <IP_ADDRESS>. Replace <IP_ADDRESS> with the suspicious IP address discovered in OS-03, then press Enter.'));
+
+  d.append(el('p','note',
+    'Open the PCAP in Wireshark. Use the host from OS-03 to filter traffic. Inspect the relevant HTTP request, service account and backup reference.'));
+
+  const inputs = el('div','row');
+
+  const sourceIp = el('input');
+  sourceIp.type='text';
+  sourceIp.placeholder='Suspicious Source IP';
+  sourceIp.setAttribute('aria-label','Suspicious Source IP');
+
+  const serviceAccount = el('input');
+  serviceAccount.type='text';
+  serviceAccount.placeholder='Service Account';
+  serviceAccount.setAttribute('aria-label','Service Account');
+
+  const backupReference = el('input');
+  backupReference.type='text';
+  backupReference.placeholder='Backup Reference';
+  backupReference.setAttribute('aria-label','Backup Reference');
+
+  inputs.append(sourceIp,serviceAccount,backupReference);
+  d.append(inputs);
+
+  const verifyButton = el('button','btn','VERIFY PACKET INVESTIGATION');
+  const result = el('p','note','');
+  result.setAttribute('aria-live','polite');
+
+  verifyButton.onclick = async () => {
+    verifyButton.disabled=true;
+    try {
+      const response = await api('/api/verify-packet',{
+        id:'OS-04',
+        sourceIp:sourceIp.value,
+        serviceAccount:serviceAccount.value,
+        backupReference:backupReference.value
+      });
+      if(response.verified){
+        result.textContent='Investigation successful! Your OS-04 flag: '+response.flag;
+        result.className='good';
+      }else{
+        result.textContent='Incorrect details. Review the PCAP.';
+        result.className='bad';
+      }
+    }catch(error){
+      result.textContent=error.message || 'Verification failed.';
+      result.className='bad';
+    }finally{
+      verifyButton.disabled=false;
+    }
+  };
+
+  d.append(verifyButton,result);
+ }
  if(c.id==='OS-03'){
   const download = el('a','btn','DOWNLOAD SECURITY EVENTS CSV');
   download.href='/evidence/security_events.csv';

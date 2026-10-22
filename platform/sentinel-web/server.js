@@ -237,6 +237,45 @@ const server = http.createServer(async (req, res) => {
 
         return send(200, { verified: true, flag: FLAGS['OS-03'] });
       }
+
+      if (p === '/api/verify-packet') {
+        if (b.id !== 'OS-04') return send(400, { error: 'invalid stage' });
+
+        const key = 'packet:' + sid + ':' + Math.floor(Date.now() / 60000);
+        hits.set(key, (hits.get(key) || 0) + 1);
+        if (hits.size > 5000) hits.clear();
+        if (hits.get(key) > 10) {
+          return send(429, { error: 'too many attempts, wait a minute' });
+        }
+
+        const fields = [b.sourceIp, b.serviceAccount, b.backupReference];
+        if (fields.some(v => typeof v !== 'string' || v.length > 100)) {
+          return send(400, { error: 'invalid investigation details' });
+        }
+
+        const pcapPath = path.join(ROOT, 'public', 'evidence', 'sentinel_traffic.pcap');
+        const pcap = fs.readFileSync(pcapPath);
+        const payload = pcap.toString('latin1');
+
+        const answerPath = path.join(ROOT, 'organiser_only', 'os04_answers.json');
+        const answer = JSON.parse(fs.readFileSync(answerPath, 'utf8'));
+
+        const sourceIp = b.sourceIp.trim();
+        const account = b.serviceAccount.trim();
+        const reference = b.backupReference.trim();
+
+        const verified =
+          eq(sourceIp, answer.sourceIp) &&
+          payload.includes('Host: ' + answer.destination + '\r\n') &&
+          payload.includes('X-Service-Account: ' + account + '\r\n') &&
+          payload.includes('ref=' + reference + ' ') &&
+          eq(account, answer.serviceAccount) &&
+          eq(reference, answer.backupReference);
+
+        if (!verified) return send(200, { verified: false });
+
+        return send(200, { verified: true, flag: FLAGS['OS-04'] });
+      }
       if (p === '/api/submit') {
         const k = sid + ':' + Math.floor(Date.now() / 60000); hits.set(k, (hits.get(k) || 0) + 1);
         if (hits.size > 5000) hits.clear();
